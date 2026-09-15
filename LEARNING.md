@@ -30,6 +30,59 @@ both sides.
 
 ---
 
+## Calibration — who you are, and what this project is actually for
+
+Assessed from your CVs (September 2026). Neither of you is as junior as you think, and that
+changes the route.
+
+### Mahmoud — DE
+
+| | |
+|---|---|
+| **Already strong** | Dimensional modeling, SCD 0–3, dbt (incremental models, snapshots, check-strategy SCD2, point-in-time joins), T-SQL incl. dynamic SQL, Medallion, Azure/Snowflake, Airflow, Power BI |
+| **Best CV item** | The inventory ETL — it has a *consequence* ("still in use, they asked for a maintainer"). Lead with it. |
+| **Gap 1 — the big one** | **100% batch. Zero streaming.** No events, no offsets, no consumers anywhere. Streaming on top of your existing modeling skill is a different salary band. |
+| **Gap 2** | **Python as an analyst, not an engineer.** No pytest, no services, no packaging, no type-driven design. This is what loses take-homes. |
+| **So your lane is** | Stream semantics and Python service craft. **Not the warehouse** — see below. |
+
+### Abdelrahman — DevOps
+
+| | |
+|---|---|
+| **Already strong** | K8s, Helm, Kustomize, Terraform, Ansible, GitHub Actions, ArgoCD, Prometheus/Loki — and unusually, supply-chain security (OpenSSF Scorecard, Semgrep, Terrascan, SARIF, Dependabot, seccomp/read-only rootfs/dropped caps) |
+| **Also** | You already write FastAPI with unit **and** integration pytest suites. That is exactly the skill Mahmoud lacks. |
+| **Gap 1** | **No employment history**, so projects carry all the weight — which raises the bar on them being *yours*, not a roadmap's. |
+| **Gap 2** | **Everything you have built is request/response.** Stateful streaming ops is a different animal and a rarer skill. |
+| **So your lane is** | Streaming-specific operations, plus mentoring Mahmoud on software craft. |
+
+### The HiveBox rule
+
+HiveBox is mid-flight and currently covers MinIO, Helm, Kustomize, Grafana/Loki and Terraform.
+BLAH asks for MinIO, Kustomize, Grafana and k3d. **That is the same work twice and the same CV
+bullets twice.**
+
+> **Do not re-derive anything HiveBox already proves.** Lift the patterns wholesale —
+> Dockerfiles, CI workflow structure, security jobs. Then spend the saved evenings on the four
+> things HiveBox structurally cannot teach: **consumer-group lag as an SLI**, **KEDA scaling on
+> lag rather than CPU**, **backpressure and shedding**, and **chaos + tracing across a stateful
+> pipeline with a broker in the middle.**
+
+### Lanes follow gaps, not strengths
+
+`docs/08-WAYS-OF-WORKING.md` splits the work along your strengths. **That is right for shipping
+and wrong for learning**, so while we are learning, we invert it:
+
+- **Mahmoud does not touch the warehouse layer until Level 7.** dbt marts and star schemas are
+  already on your CV. Building them again teaches you nothing and costs you months.
+- **Abdelrahman teaches software craft** — pytest, FastAPI, packaging, type hints — as part of
+  PR review, not as a separate exercise. This is what real teams do and it is good for both of
+  you: teaching it is how you find out whether you actually know it.
+
+We switch back to strength-based lanes at Level 7, when the goal changes from learning to
+finishing.
+
+---
+
 ## How a step works
 
 1. **One concept.** Named at the top. If a step teaches two things, it is two steps.
@@ -52,35 +105,46 @@ Levels 0–2 add up to **M0** — a complete, working, demo-able system with **n
 in it at all**. That is not a warm-up. It is the milestone, and it is the one most projects
 skip.
 
-```
-LEVEL 0  Two scripts and a pipe          [░░░░░]  0/5    ← you are here
-         A pipeline before any infrastructure exists.
+**M** = Mahmoud leads · **A** = Abdelrahman leads · **BOTH** = you both do it, separately, then
+compare. Comparing two solutions to the same small problem is the cheapest learning in the plan.
 
-LEVEL 1  Why a broker                    [░░░░░]  0/5
+```
+LEVEL 0  Two scripts and a pipe          [░░░░░]  0/5   BOTH   ← you are here
+         A pipeline before any infrastructure exists.
+         M: ~1 evening per step.  A: collapse steps 1–3 into one evening.
+
+LEVEL 1  Why a broker                    [░░░░░]  0/5   M leads, A reviews
          Break the pipe. Feel the loss. Earn Redpanda.
 
-LEVEL 2  Identity, alerts, and honesty   [░░░░]   0/4
-         Three restatements, one alert. ═══ M0 COMPLETE ═══
+LEVEL 2  Identity, alerts, and honesty   [░░░░]   0/4   M leads, A reviews
+         Three restatements, one alert.      ═══ M0 COMPLETE ═══
 
-LEVEL 3  Seeing inside it                [░░░░]   0/4
-         Metrics, lag, dashboards. B's lane takes the lead.
+LEVEL 3  Seeing inside it                [░░░░]   0/4   A leads
+         Lag as an SLI. Not CPU. The rarest thing in this project.
 
-LEVEL 4  Real ears                       [░░░░]   0/4
+LEVEL 4  Real ears                       [░░░░]   0/4   M leads
          Swap FakeASR for Whisper. Measure. Publish the bad numbers too.
 
-LEVEL 5  Real claims                     [░░░░░]  0/5
+LEVEL 5  Real claims                     [░░░░░]  0/5   M leads
          The gate, extraction, canonicalisation.
 
-LEVEL 6  Real contradictions             [░░░░]   0/4
-         kNN, NLI, thresholds. ═══ THE PRODUCT WORKS ═══
+LEVEL 6  Real contradictions             [░░░░]   0/4   M leads, A on load
+         kNN, NLI, thresholds.               ═══ THE PRODUCT WORKS ═══
 
-LEVEL 7+ Warehouse · k8s · chaos · eval gates
+LEVEL 7+ Warehouse · k8s · chaos · eval gates        ← lanes flip to strengths here
+         M finally gets to use dbt. A gets KEDA and game days.
          Scoped once we get there. No point planning it now.
 ```
 
-**Roughly 27 steps to a working product.** At two or three evenings a week that is a real
-number of months — and the point is that you can stop at the end of any level and the thing
-still runs, still demos, and still has a story.
+**Roughly 27 steps to a working product.** At two or three evenings a week that is a real number
+of months — and the point is that you can stop at the end of any level and the thing still runs,
+still demos, and still has a story.
+
+**Abdelrahman, on being ahead:** Levels 0–2 will feel slow to you, and you should still do them.
+Not for the Python — for the semantics. Offsets, event time vs processing time, and why a
+restatement is not a duplicate are things you will otherwise be operating without understanding,
+and Level 3 is unbuildable if you skip them. Your compensation is that Level 3 is yours alone and
+it is the most distinctive thing either of you will build.
 
 ---
 
