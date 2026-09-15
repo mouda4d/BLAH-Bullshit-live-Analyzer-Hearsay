@@ -109,7 +109,7 @@ skip.
 compare. Comparing two solutions to the same small problem is the cheapest learning in the plan.
 
 ```
-LEVEL 0  Two scripts and a pipe          [░░░░░]  0/5   BOTH   ← you are here
+LEVEL 0  Two scripts and a pipe          [█░░░░]  1/5   BOTH   ← you are here
          A pipeline before any infrastructure exists.
          M: ~1 evening per step.  A: collapse steps 1–3 into one evening.
 
@@ -204,12 +204,94 @@ real.
 
 ---
 
+> **Step 1 — PASSED (M, 2026-09-15).** Gap logic correct. Chose JSONL over the JSON array that
+> was specified, which is the better call: **a JSON array cannot be parsed until the closing
+> bracket arrives, so it is structurally a batch format.** Also used a generator rather than
+> building a list — the same shape a Kafka consumer has.
+>
+> Carried forward: it never terminates, and `sleep(gap)` chaining lets processing time leak into
+> event time. Both fixed in 1b.
+
+---
+
+### Step 1b — Event time is not your clock (~20 min)
+
+**Concept.** `t_ms` is *event time* — a property of the record, identical on every replay
+forever. The wall clock is *processing time*. The moment you let processing time influence
+event-time behaviour, replay stops being reproducible, and `docs/` has an entire lint rule
+devoted to stopping you.
+
+**Three fixes to `play.py`:**
+
+1. **Anchor, do not chain.** Instead of sleeping for each gap in turn, compute an absolute
+   target from one fixed start:
+
+   ```python
+   start = time.monotonic()
+   target = start + rec["t_ms"] / 1000
+   time.sleep(max(0, target - time.monotonic()))
+   ```
+
+   `monotonic()` rather than `time()`: the wall clock can jump backwards on an NTP correction,
+   and `time()` would then sleep for hours.
+
+2. **Terminate.** Decide explicitly what end-of-stream means here and exit on it. Write a
+   one-line comment saying why that is the right answer *for a file* and would be the wrong
+   answer for a socket.
+
+3. **Path and shape.** `Path(__file__).parent / "fixture.json"` so it runs from anywhere;
+   wrap it in `main()` under `if __name__ == "__main__":`.
+
+**Then measure the thing you just fixed.** Generate a 500-record fixture programmatically, one
+record every 20 ms. Run the old chained version and the new anchored version, and print
+`actual_elapsed - expected_elapsed` for the last record. The drift you could not see across six
+records is obvious across five hundred, and seeing the number yourself is worth more than my
+telling you it exists.
+
+**Done when:** it exits cleanly, runs from the repo root, and you can state the measured drift
+of both versions.
+
+**Read after:** [ADR-010](docs/01-DECISIONS.md#adr-010-event-time-processing-time-and-late-verdicts),
+first two sections only. It should now read as obvious.
+
+---
+
 ### Step 2 — A pipeline is stages with a boundary
 
-*(Unlocked when you show me Step 1. Preview so you can see where this is going: a second
-script that reads `play.py`'s output and shouts when it sees a contradiction, connected with
-`python play.py | python detect.py` — a Unix pipe, which is a real stream with real
-backpressure and will teach you more about both than a week of Kafka tutorials.)*
+**Concept.** A pipeline is two processes and a boundary between them. The boundary is where all
+the interesting problems live — ordering, buffering, backpressure, failure. You get all four
+tonight from `|`, with nothing installed.
+
+**Build:** `labs/01/detect.py`, run as `python play.py | detect.py`
+
+`detect.py` reads lines from stdin, keeps every claim it has seen **per speaker**, and prints a
+loud `CONTRADICTION` when a new line conflicts with an earlier one from the same speaker.
+
+Rules for this step, and they are the point:
+
+- **Hardcode the detection.** One rule: same speaker, one line contains `"ran"`/`"operated"`
+  positively and a later line contains `"never"` with the same topic word. Ugly is fine. You are
+  not building a detector, you are building a *boundary*.
+- **`play.py` may not import `detect.py`.** Separate processes. That constraint is what makes
+  this a pipeline instead of a function call.
+- **Keep the speaker.** You parsed it in Step 1 and threw it away. Contradiction detection is
+  per-speaker — S0 and S1 disagreeing is a conversation, not a contradiction.
+- Print the **both** quotes and **both** timestamps when it fires. Never just "contradiction
+  found" — an alert without evidence is not shippable, and that habit starts now.
+
+**The trap:** `play.py` writes to a pipe, and pipes are buffered. Your detector may sit silent
+for 23 seconds and then print everything at once. Find out why, and find the flag that fixes it.
+**You have just met buffering, and a buffer you did not know about is exactly how a real pipeline
+appears to hang.**
+
+**Done when:** `python play.py | python detect.py` prints the transcript paced in real time and
+fires exactly one contradiction, with both quotes, a moment after the 19-second line.
+
+**Then notice:** you have a producer, a consumer, a serialization format, and a transport. That
+is BLAH. Everything from here is replacing one of those four with something sturdier, and each
+replacement will have a reason you personally felt.
+
+**Read after:** nothing. Step 3 puts a contract between the two halves.
 
 ---
 

@@ -1,0 +1,6 @@
+{"t_ms": 1000,  "speaker": "S0", "text": "So tell me about your Kafka experience."}
+{"t_ms": 4200,  "speaker": "S1", "text": "I ran our Kafka estate for about four years at Acme."}
+{"t_ms": 9000,  "speaker": "S1", "text": "Three clusters, I was the one paged when it broke."}
+{"t_ms": 15000, "speaker": "S0", "text": "What was the hardest incident?"}
+{"t_ms": 19000, "speaker": "S1", "text": "Honestly I've never actually operated Kafka myself."}
+{"t_ms": 23000, "speaker": "S1", "text": "We had a platform team that owned all of that."}
