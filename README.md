@@ -27,6 +27,10 @@ solve. BLAH is a consistency detector, not a lie detector.
 ---
 
 ## Quickstart
+> **Building this yourselves?** Do not read `docs/` front to back — it is an answer key.
+> Start at [`LEARNING.md`](LEARNING.md), which walks the same system one evening at a time,
+> pain first and tool second.
+
 
 No GPU. No API keys. No accounts. No model downloads.
 
